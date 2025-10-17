@@ -1,7 +1,407 @@
-<html>
-  <head><title>Fallback App</title></head>
-  <body>
-    <h1>Hello (fallback)</h1>
-    <p>This is fallback because Gemini failed. Brief: Create a simple To-Do List website that allows users to add, edit, mark complete, and delete tasks. Data should persist in localStorage so the list stays after refresh.</p>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple To-Do List</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --background-light: #f4f7f6;
+            --text-dark: #333;
+            --text-light: #fff;
+            --border-color: #ddd;
+            --completed-text: #888;
+            --edit-button: #ffc107;
+            --delete-button: #dc3545;
+            --shadow-light: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align at the top */
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--background-light);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px var(--shadow-light);
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 40px; /* Give some space from the top */
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .add-task-container {
+            display: flex;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        .add-task-container input[type="text"] {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .add-task-container input[type="text"]:focus {
+            border-color: var(--primary-color);
+        }
+
+        .add-task-container button {
+            background-color: var(--primary-color);
+            color: var(--text-light);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .add-task-container button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .add-task-container button:active {
+            transform: translateY(0);
+        }
+
+        .task-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 5px var(--shadow-light);
+            transition: transform 0.2s ease;
+        }
+
+        .task-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: var(--completed-text);
+        }
+
+        .task-item input[type="checkbox"] {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+            min-width: 20px; /* ensure checkbox size on smaller screens */
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .task-text {
+            flex-grow: 1;
+            font-size: 1.1em;
+            color: var(--text-dark);
+            word-break: break-word; /* Handle long task names */
+            padding: 0 5px; /* give some padding for editable content */
+            min-height: 20px; /* ensure clickable area */
+        }
+        
+        .task-text[contenteditable="true"] {
+            border-bottom: 1px dashed var(--primary-color);
+            outline: none;
+        }
+
+        .task-item button {
+            background: none;
+            border: none;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-left: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .task-item .edit-btn {
+            color: var(--edit-button);
+        }
+        .task-item .edit-btn:hover {
+            background-color: rgba(255, 193, 7, 0.2);
+        }
+
+        .task-item .delete-btn {
+            color: var(--delete-button);
+        }
+        .task-item .delete-btn:hover {
+            background-color: rgba(220, 53, 69, 0.2);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+                margin-top: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+                margin-bottom: 20px;
+            }
+
+            .add-task-container {
+                flex-direction: column;
+            }
+
+            .add-task-container button {
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .task-item {
+                flex-wrap: wrap;
+                justify-content: space-between;
+                padding: 10px;
+            }
+            
+            .task-item input[type="checkbox"] {
+                margin-right: 10px;
+            }
+
+            .task-text {
+                flex-basis: 100%; /* Take full width */
+                order: 1; /* Place after checkbox */
+                margin-bottom: 10px;
+                padding: 0;
+            }
+
+            .task-item .actions {
+                display: flex;
+                order: 2; /* Place after text */
+                width: 100%;
+                justify-content: flex-end;
+                margin-top: 10px;
+            }
+            
+            .task-item button {
+                margin-left: 5px;
+                padding: 6px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>To-Do List</h1>
+
+        <div class="add-task-container">
+            <input type="text" id="new-task-input" placeholder="Add a new task...">
+            <button id="add-task-btn">Add Task</button>
+        </div>
+
+        <ul id="task-list" class="task-list">
+            <!-- Tasks will be dynamically added here -->
+        </ul>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const newTaskInput = document.getElementById('new-task-input');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const taskList = document.getElementById('task-list');
+
+            let tasks = []; // Array to hold task objects
+
+            // Load tasks from localStorage
+            function loadTasks() {
+                const storedTasks = localStorage.getItem('todoTasks');
+                if (storedTasks) {
+                    tasks = JSON.parse(storedTasks);
+                }
+                renderTasks();
+            }
+
+            // Save tasks to localStorage
+            function saveTasks() {
+                localStorage.setItem('todoTasks', JSON.stringify(tasks));
+            }
+
+            // Render tasks to the DOM
+            function renderTasks() {
+                taskList.innerHTML = ''; // Clear current list
+
+                if (tasks.length === 0) {
+                    const emptyMessage = document.createElement('p');
+                    emptyMessage.textContent = 'No tasks yet! Add one above.';
+                    emptyMessage.style.textAlign = 'center';
+                    emptyMessage.style.color = '#888';
+                    emptyMessage.style.marginTop = '20px';
+                    taskList.appendChild(emptyMessage);
+                    return;
+                }
+
+                tasks.forEach(task => {
+                    const listItem = document.createElement('li');
+                    listItem.className = `task-item ${task.completed ? 'completed' : ''}`;
+                    listItem.dataset.id = task.id;
+
+                    listItem.innerHTML = `
+                        <input type="checkbox" ${task.completed ? 'checked' : ''}>
+                        <span class="task-text" contenteditable="false">${task.text}</span>
+                        <div class="actions">
+                            <button class="edit-btn" aria-label="Edit task">✎</button>
+                            <button class="delete-btn" aria-label="Delete task">✖</button>
+                        </div>
+                    `;
+
+                    // Event Listeners for new elements
+                    const checkbox = listItem.querySelector('input[type="checkbox"]');
+                    checkbox.addEventListener('change', () => toggleComplete(task.id));
+
+                    const taskTextSpan = listItem.querySelector('.task-text');
+                    const editButton = listItem.querySelector('.edit-btn');
+                    const deleteButton = listItem.querySelector('.delete-btn');
+
+                    editButton.addEventListener('click', () => {
+                        if (taskTextSpan.contentEditable === 'true') {
+                            // Save changes
+                            taskTextSpan.contentEditable = 'false';
+                            taskTextSpan.blur(); // Remove focus
+                            editTask(task.id, taskTextSpan.textContent);
+                            editButton.textContent = '✎'; // Change back to edit icon
+                            editButton.setAttribute('aria-label', 'Edit task');
+                        } else {
+                            // Make editable
+                            taskTextSpan.contentEditable = 'true';
+                            taskTextSpan.focus(); // Focus on the span to edit
+                            editButton.textContent = '💾'; // Change to save icon
+                            editButton.setAttribute('aria-label', 'Save task');
+                        }
+                    });
+
+                    // Save on Enter key or blur when editing
+                    taskTextSpan.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault(); // Prevent new line
+                            taskTextSpan.blur();
+                            editButton.textContent = '✎'; // Change back to edit icon
+                            editButton.setAttribute('aria-label', 'Edit task');
+                        }
+                    });
+
+                    taskTextSpan.addEventListener('blur', () => {
+                        if (taskTextSpan.contentEditable === 'true') {
+                             // If focus is lost and it's editable, save changes
+                            taskTextSpan.contentEditable = 'false';
+                            editTask(task.id, taskTextSpan.textContent);
+                            editButton.textContent = '✎'; // Change back to edit icon
+                            editButton.setAttribute('aria-label', 'Edit task');
+                        }
+                    });
+
+                    deleteButton.addEventListener('click', () => deleteTask(task.id));
+
+                    taskList.appendChild(listItem);
+                });
+            }
+
+            // Add a new task
+            function addTask() {
+                const taskText = newTaskInput.value.trim();
+                if (taskText === '') {
+                    alert('Task cannot be empty!');
+                    return;
+                }
+
+                // Generate a unique ID for the task
+                const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+                const newTask = {
+                    id: newId,
+                    text: taskText,
+                    completed: false
+                };
+
+                tasks.push(newTask);
+                newTaskInput.value = ''; // Clear input field
+                saveTasks();
+                renderTasks();
+            }
+
+            // Toggle task completion status
+            function toggleComplete(id) {
+                const taskIndex = tasks.findIndex(task => task.id === id);
+                if (taskIndex > -1) {
+                    tasks[taskIndex].completed = !tasks[taskIndex].completed;
+                    saveTasks();
+                    renderTasks();
+                }
+            }
+
+            // Edit task text
+            function editTask(id, newText) {
+                const taskIndex = tasks.findIndex(task => task.id === id);
+                if (taskIndex > -1) {
+                    tasks[taskIndex].text = newText.trim();
+                    saveTasks();
+                    // No need to re-render if contenteditable directly updates the DOM,
+                    // but calling renderTasks ensures consistency and handles edge cases.
+                    renderTasks(); 
+                }
+            }
+
+            // Delete a task
+            function deleteTask(id) {
+                tasks = tasks.filter(task => task.id !== id);
+                saveTasks();
+                renderTasks();
+            }
+
+            // Event Listeners
+            addTaskBtn.addEventListener('click', addTask);
+            newTaskInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addTask();
+                }
+            });
+
+            // Initial load
+            loadTasks();
+        });
+    </script>
+</body>
 </html>
